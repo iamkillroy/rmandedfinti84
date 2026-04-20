@@ -66,38 +66,32 @@ void buzz(int period) {
     snprintf(cmd, sizeof(cmd), "./beeper %d 1000 &", freq);
     system(cmd);
 }
-void edf_display_fancy(EDF * edf, uint8_t runTill, int delayMs) {
+void edf_display_fancy(EDF * edf, uint8_t badrunTill, int delayMs) {
+    uint8_t runTill = badrunTill * 2;
     uint8_t totalTaskUsage[runTill];
     for (int i = 0; i < runTill; i++) {
         totalTaskUsage[i] = edf_step(edf);
     }
 
-    // print each task row
     for (int t = 0; t < edf->taskLen; t++) {
         printf("T%d ", t + 1);
         for (int i = 0; i < runTill; i++) {
             if (totalTaskUsage[i] == t) {
-                printf("█");
+                printf("█");  // block + 2 spaces to pad to 3 wide
             } else {
-                printf(" ");
+                printf(" ");  // 3 spaces
             }
             fflush(stdout);
-            usleep(delayMs * 1000);  // delay between each column
-
-            // beep based on task's period (shorter period = higher frequency)
+            usleep(delayMs * 1000);
             if (totalTaskUsage[i] == t) {
-                // map period to frequency: shorter period = higher pitch
-                int freq = 2000 / edf->tasks[t].period * 100;
-                buzz(freq);
+                char cmd[64];
+                int freq = 8000 / edf->tasks[t].period;
+                snprintf(cmd, sizeof(cmd), "./beeper %d 100 &", freq);
+                system(cmd);
             }
         }
         printf("\n");
     }
 
-    // print timeline
-    printf("   ");
-    for (int i = 0; i < runTill; i++) {
-        printf("%d ", i % 10);  // mod 10 to keep single digit
-    }
-    printf("\n");
+
 }
